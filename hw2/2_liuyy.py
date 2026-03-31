@@ -1,4 +1,5 @@
 import numpy as np
+from astropy.io import fits
 
 def write_fits(filename, data):
     dtype2bitpix = {
@@ -26,17 +27,16 @@ def write_fits(filename, data):
         card_str = f"{keyword_str}= {val_field} / {comment}"
         header_cards.append(f"{card_str:<80}"[:80].encode('ascii'))
 
-    add_card("SIMPLE", True, "File conforms to FITS standard")
+    add_card("SIMPLE", True, "conforms to FITS standard")
     add_card("BITPIX", bitpix, "Bits per pixel")
-    add_card("NAXIS", data.ndim, "Number of data axes")
+    add_card("NAXIS", data.ndim, "Number of array dimensions")
     
-    # 写入 NAXISn 时，必须把 shape 逆序！
+    # 把 shape 逆序
     reversed_shape = data.shape[::-1]
     for i, dim_size in enumerate(reversed_shape, start=1):
-        add_card(f"NAXIS{i}", dim_size, f"Length of data axis {i}")
+        add_card(f"NAXIS{i}", dim_size, "")
 
-    add_card("BUNIT", "DN/s", "Pixel unit")
-    add_card("TELESCOP", "SDO", "Data mapped for solar physics")
+    add_card("TELESCOP", "SDO", "NASA's Solar Dynamics Observatory")
     end_card = f"{'END':<80}".encode('ascii')
     header_cards.append(end_card)
 
@@ -57,5 +57,7 @@ def write_fits(filename, data):
     print(f"Data: {len(data_bytes) + len(data_padding_bytes)} bytes")
 
 if __name__ == "__main__":
-    test_image = np.random.rand(100, 100).astype(np.float32) * 1000
-    write_fits("hw2/solar_flare.fits", test_image)
+    with fits.open('hw2/sdo_image.fits') as hdul:
+        data = hdul[0].data
+    data = data.astype(np.float32)
+    write_fits("hw2/output.fits", data)
